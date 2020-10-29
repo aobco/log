@@ -1,4 +1,4 @@
-module xyz/common
+module github.com/aobco/log
 
 go 1.14
 
