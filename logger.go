@@ -2,7 +2,6 @@ package log
 
 import (
 	"gopkg.in/natefinch/lumberjack.v2"
-	"go.uber.org/zap/zapcore"
 	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -31,9 +30,9 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 }
 
 func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollingBy int) {
-	var fileWriterSyncer WriteSyncer
+	var fileWriterSyncer zapcore.WriteSyncer
 	if rollingBy == RollingBySize {
-		fileWriterSyncer := zapcore.AddSync(&lumberjack.Logger{
+		fileWriterSyncer = zapcore.AddSync(&lumberjack.Logger{
 			Filename:   filename,
 			MaxSize:    maxSize, // MB
 			LocalTime:  true,
@@ -46,7 +45,7 @@ func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollin
 		if err != nil {
 			panic(err)
 		}
-		fileWriterSyncer := zapcore.AddSync(rotate)
+		fileWriterSyncer = zapcore.AddSync(rotate)
 	}
 	fileEncoderConfig := zap.NewProductionEncoderConfig()
 	fileEncoderConfig.EncodeTime = TimeEncoder // zapcore.ISO8601TimeEncoder
