@@ -1,7 +1,7 @@
 package log
 
 import (
-	// "gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -10,10 +10,16 @@ import (
 	"time"
 )
 
+const (
+	RollingBySize = iota
+	RollingByDate
+)
+
 var Logger *zap.Logger
 var Sugar *zap.SugaredLogger
 
 func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	// # configure specific data zone
 	//loc, err := time.LoadLocation("Asia/Shanghai")
 	//if err != nil {
 	//	Errorf("time load location [Asia/Shanghai] fail %v", err)
@@ -23,22 +29,24 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int) {
-	// >>> 按文件大小滚动
-	//fileWriterSyncer := zapcore.AddSync(&lumberjack.Logger{
-	//	Filename:   filename,
-	//	MaxSize:    maxSize, //MB
-	//	LocalTime:  true,
-	//	MaxBackups: maxBackups, // number of log files
-	//	MaxAge:     maxAge,     // days
-	//
-	//})
-	// >>> 按日期滚动
-	rotate, err := RotateLogs(filename)
-	if err != nil {
-		panic(err)
+func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollingBy string) {
+	var fileWriterSyncer WriteSyncer
+	if rollingBy == RollingBySize {
+		fileWriterSyncer := zapcore.AddSync(&lumberjack.Logger{
+			Filename:   filename,
+			MaxSize:    maxSize, // MB
+			LocalTime:  true,
+			MaxBackups: maxBackups, // file number
+			MaxAge:     maxAge,     // day
+
+		})	
+	} else {
+		rotate, err := RotateLogs(filename)
+		if err != nil {
+			panic(err)
+		}
+		fileWriterSyncer := zapcore.AddSync(rotate)
 	}
-	fileWriterSyncer := zapcore.AddSync(rotate)
 	fileEncoderConfig := zap.NewProductionEncoderConfig()
 	fileEncoderConfig.EncodeTime = TimeEncoder // zapcore.ISO8601TimeEncoder
 	fileEncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
@@ -56,7 +64,6 @@ func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int) {
 	Sugar = Logger.Sugar()
 }
 
-//按日期切割
 func RotateLogs(filePath string) (*rotatelogs.RotateLogs, error) {
 	filename := filePath + ".%Y%m%d"
 	retate, err := rotatelogs.New(filename, rotatelogs.WithLinkName(filePath), rotatelogs.WithMaxAge(time.Hour*24*3), rotatelogs.WithRotationTime(time.Hour*24))
