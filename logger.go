@@ -2,6 +2,7 @@ package log
 
 import (
 	"gopkg.in/natefinch/lumberjack.v2"
+	"go.uber.org/zap/zapcore"
 	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
