@@ -29,7 +29,7 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollingBy string) {
+func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollingBy int) {
 	var fileWriterSyncer WriteSyncer
 	if rollingBy == RollingBySize {
 		fileWriterSyncer := zapcore.AddSync(&lumberjack.Logger{
