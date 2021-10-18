@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime/debug"
 	"time"
+	"fmt"
 )
 
 const (
@@ -29,7 +30,7 @@ func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollingBy int) {
+func InitZapLog(filename string, logLevel string, maxSize int, maxBackups int, maxAge int, rollingBy int) {
 	var fileWriterSyncer zapcore.WriteSyncer
 	if rollingBy == RollingBySize {
 		fileWriterSyncer = zapcore.AddSync(&lumberjack.Logger{
@@ -58,8 +59,26 @@ func InitZapLog(filename string, maxSize int, maxBackups int, maxAge int, rollin
 		zapcore.NewCore(zapcore.NewConsoleEncoder(fileEncoderConfig), fileWriterSyncer, zap.NewAtomicLevel()),
 		zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), zap.NewAtomicLevel()),
 	)
-
-	core.Enabled(zapcore.DebugLevel)
+	level := zapcore.DebugLevel
+	switch string(logLevel) {
+	case "debug", "DEBUG":
+		level = zapcore.DebugLevel
+	case "info", "INFO", "": // make the zero value useful
+		level = zapcore.DebugLevel
+	case "warn", "WARN":
+		level = zapcore.DebugLevel
+	case "error", "ERROR":
+		level = zapcore.DebugLevel
+	case "dpanic", "DPANIC":
+		level = zapcore.DebugLevel
+	case "panic", "PANIC":
+		level = zapcore.DebugLevel
+	case "fatal", "FATAL":
+		level = zapcore.DebugLevel
+	default:
+		fmt.Printf("invalid log level %s", logLevel)
+	}
+	core.Enabled(level)
 	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	Sugar = Logger.Sugar()
 }
