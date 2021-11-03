@@ -94,7 +94,7 @@ func Default() {
 		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
 		core := zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), zap.NewAtomicLevel())
 		core.Enabled(zapcore.DebugLevel)
-		Logger := zap.New(core)
+		Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 		Sugar = Logger.Sugar()
 	})
 }
