@@ -1,14 +1,16 @@
 package log
 
 import (
-	"gopkg.in/natefinch/lumberjack.v2"
+	"fmt"
 	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"runtime/debug"
+	"sync"
 	"time"
-	"fmt"
 )
 
 const (
@@ -40,7 +42,7 @@ func InitZapLog(filename string, logLevel string, maxSize int, maxBackups int, m
 			MaxBackups: maxBackups, // file number
 			MaxAge:     maxAge,     // day
 
-		})	
+		})
 	} else {
 		rotate, err := RotateLogs(filename)
 		if err != nil {
@@ -83,6 +85,19 @@ func InitZapLog(filename string, logLevel string, maxSize int, maxBackups int, m
 	Sugar = Logger.Sugar()
 }
 
+var once sync.Once
+
+func Default() {
+	once.Do(func() {
+		debugLogger, _ := observer.New(zap.DebugLevel)
+		warnLogger, _ := observer.New(zap.WarnLevel)
+		core := zapcore.NewTee(debugLogger, warnLogger)
+		core.Enabled(zapcore.DebugLevel)
+		Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+		Sugar = Logger.Sugar()
+	})
+}
+
 func RotateLogs(filePath string) (*rotatelogs.RotateLogs, error) {
 	filename := filePath + ".%Y%m%d"
 	retate, err := rotatelogs.New(filename, rotatelogs.WithLinkName(filePath), rotatelogs.WithMaxAge(time.Hour*24*3), rotatelogs.WithRotationTime(time.Hour*24))
@@ -90,55 +105,91 @@ func RotateLogs(filePath string) (*rotatelogs.RotateLogs, error) {
 }
 
 func Debug(args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	Sugar.Debug(args...)
 }
 
 func Debugf(template string, args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	Sugar.Debugf(template, args...)
 }
 
 func Info(args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	Sugar.Info(args...)
 }
 
 func Infof(template string, args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	Sugar.Infof(template, args...)
 }
 
 func Warn(args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	Sugar.Warn(args...)
 }
 
 func Warnf(template string, args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	Sugar.Warnf(template, args...)
 }
 
 func Error(args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	args = append(args, string(debug.Stack()))
 	Sugar.Error(args...)
 }
 
 func Errorf(template string, args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	args = append(args, string(debug.Stack()))
 	Sugar.Errorf(template+"\n", args...)
 }
 
 func Panic(args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	args = append(args, string(debug.Stack()))
 	Sugar.Panic(args...)
 }
 
 func Panicf(template string, args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	args = append(args, string(debug.Stack()))
 	Sugar.Panicf(template, args...)
 }
 
 func Fatal(args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	args = append(args, string(debug.Stack()))
 	Sugar.Fatal(args...)
 }
 
 func Fatalf(template string, args ...interface{}) {
+	if Sugar == nil {
+		Default()
+	}
 	args = append(args, string(debug.Stack()))
 	Sugar.Fatalf(template, args...)
 }
