@@ -89,13 +89,12 @@ var once sync.Once
 func Default() {
 	once.Do(func() {
 		println("init default logger to standard output")
-		config := zap.NewProductionConfig()
-		config.OutputPaths = []string{"stdout"}
-		Logger, err := config.Build()
-		if err != nil {
-			fmt.Errorf("%v", err)
-			return
-		}
+		devEncoderConfig := zap.NewDevelopmentEncoderConfig()
+		devEncoderConfig.EncodeTime = TimeEncoder
+		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
+		core := zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), zap.NewAtomicLevel())
+		core.Enabled(zapcore.DebugLevel)
+		Logger := zap.New(core)
 		Sugar = Logger.Sugar()
 	})
 }
