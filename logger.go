@@ -5,7 +5,6 @@ import (
 	"github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"runtime/debug"
