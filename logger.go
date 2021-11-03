@@ -89,11 +89,14 @@ var once sync.Once
 
 func Default() {
 	once.Do(func() {
-		debugLogger, _ := observer.New(zap.DebugLevel)
-		warnLogger, _ := observer.New(zap.WarnLevel)
-		core := zapcore.NewTee(debugLogger, warnLogger)
-		core.Enabled(zapcore.DebugLevel)
-		Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+		println("init default logger to standard output")
+		config := zap.NewProductionConfig()
+		config.OutputPaths = []string{"stdout"}
+		Logger, err := config.Build()
+		if err != nil {
+			fmt.Errorf("%v", err)
+			return
+		}
 		Sugar = Logger.Sugar()
 	})
 }
