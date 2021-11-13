@@ -184,6 +184,7 @@ func Fatal(args ...interface{}) {
 		Default()
 	}
 	args = append(args, string(debug.Stack()))
+	Sugar.Error(args...)
 	Sugar.Fatal(args...)
 }
 
@@ -192,5 +193,6 @@ func Fatalf(template string, args ...interface{}) {
 		Default()
 	}
 	args = append(args, string(debug.Stack()))
+	Sugar.Errorf(template+"\n", args...)
 	Sugar.Fatalf(template, args...)
 }
