@@ -1,6 +1,6 @@
 module github.com/aobco/log
 
-go 1.17
+go 1.16
 
 require (
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
@@ -11,7 +11,6 @@ require (
 	github.com/stretchr/testify v1.6.1 // indirect
 	github.com/tebeka/strftime v0.1.5 // indirect
 	go.uber.org/zap v1.15.0
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )

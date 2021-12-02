@@ -8,6 +8,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 )
@@ -56,30 +57,29 @@ func InitZapLog(filename string, logLevel string, maxSize int, maxBackups int, m
 	devEncoderConfig.EncodeTime = TimeEncoder
 	devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
 
-	core := zapcore.NewTee(
-		zapcore.NewCore(zapcore.NewConsoleEncoder(fileEncoderConfig), fileWriterSyncer, zap.NewAtomicLevel()),
-		zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), zap.NewAtomicLevel()),
-	)
-	level := zapcore.DebugLevel
-	switch string(logLevel) {
-	case "debug", "DEBUG":
+	level := zapcore.InfoLevel
+	switch strings.ToUpper(logLevel) {
+	case "DEBUG":
 		level = zapcore.DebugLevel
-	case "info", "INFO", "": // make the zero value useful
-		level = zapcore.DebugLevel
-	case "warn", "WARN":
-		level = zapcore.DebugLevel
-	case "error", "ERROR":
-		level = zapcore.DebugLevel
-	case "dpanic", "DPANIC":
-		level = zapcore.DebugLevel
-	case "panic", "PANIC":
-		level = zapcore.DebugLevel
-	case "fatal", "FATAL":
-		level = zapcore.DebugLevel
+	case "INFO", "": // make the zero value useful
+		level = zapcore.InfoLevel
+	case "WARN":
+		level = zapcore.WarnLevel
+	case "ERROR":
+		level = zapcore.ErrorLevel
+	case "DPANIC":
+		level = zapcore.DPanicLevel
+	case "PANIC":
+		level = zapcore.PanicLevel
+	case "FATAL":
+		level = zapcore.FatalLevel
 	default:
 		fmt.Printf("invalid log level %s", logLevel)
 	}
-	core.Enabled(level)
+	core := zapcore.NewTee(
+		zapcore.NewCore(zapcore.NewConsoleEncoder(fileEncoderConfig), fileWriterSyncer, level),
+		zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), level),
+	)
 	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	Sugar = Logger.Sugar()
 }
