@@ -3,9 +3,24 @@ package main
 import "github.com/aobco/log"
 
 func main() {
-	log.InitZapLog("sam.log", "WARN", 100000, 100000, 10000000, 1000000)
+	size()
+	date()
+}
+
+func size() {
+	log.Init("sam.log", "WARN", 1, 2, 2, log.RollingBySize, true)
 	log.Debugf("debug")
 	log.Infof("info")
 	log.Warnf("warn")
 	log.Errorf("error")
+	println("done")
+}
+
+func date() {
+	log.Init("sam.log", "WARN", 1, 2, 2, log.RollingByDate)
+	log.Debugf("debug")
+	log.Infof("info")
+	log.Warnf("warn")
+	log.Errorf("error")
+	println("done")
 }

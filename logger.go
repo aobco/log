@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -14,49 +15,81 @@ import (
 )
 
 const (
+	dataRollingSuffix = ".%Y%m%d"
+
 	RollingBySize = iota
 	RollingByDate
 )
 
-var Logger *zap.Logger
-var Sugar *zap.SugaredLogger
+var (
+	Logger *zap.Logger
+	Sugar  *zap.SugaredLogger
+	once   sync.Once
+)
 
-func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	// # configure specific data zone
+// zapcore.ISO8601TimeEncoder
+func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	//loc, err := time.LoadLocation("Asia/Shanghai")
 	//if err != nil {
 	//	Errorf("time load location [Asia/Shanghai] fail %v", err)
 	//	loc = time.FixedZone("CST", 8*3600)
 	//}
 	//enc.AppendString(t.In(loc).Format("2006-01-02 15:04:05.000"))
-	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+	enc.AppendString(t.Format(time.RFC3339))
 }
 
-func InitZapLog(filename string, logLevel string, maxSize int, maxBackups int, maxAge int, rollingBy int) {
-	var fileWriterSyncer zapcore.WriteSyncer
-	if rollingBy == RollingBySize {
-		fileWriterSyncer = zapcore.AddSync(&lumberjack.Logger{
-			Filename:   filename,
-			MaxSize:    maxSize, // MB
-			LocalTime:  true,
-			MaxBackups: maxBackups, // file number
-			MaxAge:     maxAge,     // day
-
-		})
-	} else {
-		rotate, err := RotateLogs(filename)
-		if err != nil {
-			panic(err)
-		}
-		fileWriterSyncer = zapcore.AddSync(rotate)
+func DateRolling(filename string, logLevel string, maxBackups, maxAge int, stdout ...bool) {
+	rotate, err := RotateLogs(filename, uint(maxBackups), maxAge)
+	if err != nil {
+		panic(err)
 	}
-	fileEncoderConfig := zap.NewProductionEncoderConfig()
-	fileEncoderConfig.EncodeTime = TimeEncoder // zapcore.ISO8601TimeEncoder
-	fileEncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	devEncoderConfig := zap.NewDevelopmentEncoderConfig()
-	devEncoderConfig.EncodeTime = TimeEncoder
-	devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
+	level := logLv(logLevel)
+	cores := make([]zapcore.Core, 0)
+	fileWriterSyncer := zapcore.AddSync(rotate)
+	logCore(fileWriterSyncer, level, &cores)
+	devCore(stdout, level, &cores)
+	core := zapcore.NewTee(cores...)
+	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	Sugar = Logger.Sugar()
+}
 
+func SizeRolling(filename string, logLevel string, maxSize, maxBackups, maxAge int, stdout ...bool) {
+	level := logLv(logLevel)
+	cores := make([]zapcore.Core, 0)
+	fileWriterSyncer := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   filename,
+		MaxSize:    maxSize, // MB
+		LocalTime:  true,
+		MaxBackups: maxBackups,
+		MaxAge:     maxAge, // Day
+
+	})
+	logCore(fileWriterSyncer, level, &cores)
+	devCore(stdout, level, &cores)
+	core := zapcore.NewTee(cores...)
+	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	Sugar = Logger.Sugar()
+}
+
+func devCore(stdout []bool, level zapcore.Level, cores *[]zapcore.Core) {
+	if len(stdout) > 0 && stdout[0] {
+		devEncoderConfig := zap.NewDevelopmentEncoderConfig()
+		devEncoderConfig.EncodeTime = timeEncoder
+		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		c := zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), level)
+		*cores = append(*cores, c)
+	}
+}
+
+func logCore(fileWriterSyncer zapcore.WriteSyncer, level zapcore.Level, cores *[]zapcore.Core) {
+	fileEncoderConfig := zap.NewProductionEncoderConfig()
+	fileEncoderConfig.EncodeTime = timeEncoder
+	fileEncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	c := zapcore.NewCore(zapcore.NewConsoleEncoder(fileEncoderConfig), fileWriterSyncer, level)
+	*cores = append(*cores, c)
+}
+
+func logLv(logLevel string) zapcore.Level {
 	level := zapcore.InfoLevel
 	switch strings.ToUpper(logLevel) {
 	case "DEBUG":
@@ -76,21 +109,23 @@ func InitZapLog(filename string, logLevel string, maxSize int, maxBackups int, m
 	default:
 		fmt.Printf("invalid log level %s", logLevel)
 	}
-	core := zapcore.NewTee(
-		zapcore.NewCore(zapcore.NewConsoleEncoder(fileEncoderConfig), fileWriterSyncer, level),
-		zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), level),
-	)
-	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	Sugar = Logger.Sugar()
+	return level
 }
 
-var once sync.Once
+func Init(filename string, logLevel string, maxSize int, maxBackups int, maxAge int, rollingBy int, stdout ...bool) {
+	switch rollingBy {
+	case RollingBySize:
+		SizeRolling(filename, logLevel, maxSize, maxBackups, maxAge, stdout...)
+	default:
+		DateRolling(filename, logLevel, maxBackups, maxAge, stdout...)
+	}
+}
 
 func Default() {
 	once.Do(func() {
-		println("init default logger to standard output")
+		println("pipe log to stdout")
 		devEncoderConfig := zap.NewDevelopmentEncoderConfig()
-		devEncoderConfig.EncodeTime = TimeEncoder
+		devEncoderConfig.EncodeTime = timeEncoder
 		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
 		core := zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), zap.DebugLevel)
 		Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
@@ -98,10 +133,21 @@ func Default() {
 	})
 }
 
-func RotateLogs(filePath string) (*rotatelogs.RotateLogs, error) {
-	filename := filePath + ".%Y%m%d"
-	retate, err := rotatelogs.New(filename, rotatelogs.WithLinkName(filePath), rotatelogs.WithMaxAge(time.Hour*24*3), rotatelogs.WithRotationTime(time.Hour*24))
-	return retate, err
+func RotateLogs(filePath string, maxBackups uint, maxAge int) (*rotatelogs.RotateLogs, error) {
+	var filename string
+	ext := filepath.Ext(filePath)
+	if len(ext) > 0 {
+		filename = strings.TrimSuffix(filePath, ext) + dataRollingSuffix + ext
+	} else {
+		filename = filePath + dataRollingSuffix
+	}
+	options := []rotatelogs.Option{rotatelogs.WithLinkName(filePath), rotatelogs.WithRotationTime(time.Hour * 24)}
+	if int(maxBackups) > maxAge {
+		options = append(options, rotatelogs.WithMaxAge(time.Hour*24*time.Duration(maxAge)))
+	} else {
+		options = append(options, rotatelogs.WithRotationCount(maxBackups))
+	}
+	return rotatelogs.New(filename, options...)
 }
 
 func Debug(args ...interface{}) {
@@ -181,7 +227,7 @@ func Panicf(template string, args ...interface{}) {
 /*
 	1. print err msg
 	2. exit application
-	3. defer won't be excecuted
+	3. defer won't be executed
 */
 func Fatal(args ...interface{}) {
 	if Sugar == nil {
