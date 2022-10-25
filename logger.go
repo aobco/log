@@ -17,8 +17,8 @@ import (
 const (
 	dataRollingSuffix = ".%Y%m%d"
 
-	RollingBySize = iota
-	RollingByDate
+	RollingBySize = 0
+	RollingByDate = 1
 )
 
 var (
