@@ -108,6 +108,7 @@ func logLv(logLevel string) zapcore.Level {
 		level = zapcore.FatalLevel
 	default:
 		fmt.Printf("invalid log level %s", logLevel)
+		level = zapcore.InfoLevel
 	}
 	return level
 }
@@ -123,7 +124,7 @@ func Init(filename string, logLevel string, maxSize int, maxBackups int, maxAge 
 
 func Default() {
 	once.Do(func() {
-		println("pipe log to stdout")
+		// println("pipe log to stdout")
 		devEncoderConfig := zap.NewDevelopmentEncoderConfig()
 		devEncoderConfig.EncodeTime = timeEncoder
 		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
