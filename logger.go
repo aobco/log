@@ -62,7 +62,7 @@ func SizeRolling(filename string, logLevel string, maxSize, maxBackups, maxAge i
 		LocalTime:  true,
 		MaxBackups: maxBackups,
 		MaxAge:     maxAge, // Day
-
+		Compress:   true,
 	})
 	logCore(fileWriterSyncer, level, &cores)
 	devCore(stdout, level, &cores)
