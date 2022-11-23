@@ -206,7 +206,7 @@ func Errorf(template string, args ...interface{}) {
 		Default()
 	}
 	args = append(args, string(debug.Stack()))
-	Sugar.Errorf(template+"\n", args...)
+	Sugar.Errorf(template+"\n%v", args...)
 }
 
 func Panic(args ...interface{}) {
