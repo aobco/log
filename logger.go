@@ -222,7 +222,7 @@ func Panicf(template string, args ...interface{}) {
 		Default()
 	}
 	args = append(args, string(debug.Stack()))
-	Sugar.Panicf(template, args...)
+	Sugar.Panicf(template+"\n%v", args...)
 }
 
 /*
@@ -243,5 +243,5 @@ func Fatalf(template string, args ...interface{}) {
 		Default()
 	}
 	args = append(args, string(debug.Stack()))
-	Sugar.Fatalf(template, args...)
+	Sugar.Fatalf(template+"\n%v", args...)
 }
