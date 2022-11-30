@@ -107,7 +107,7 @@ func logLv(logLevel string) zapcore.Level {
 	case "FATAL":
 		level = zapcore.FatalLevel
 	default:
-		fmt.Printf("invalid log level %s", logLevel)
+		fmt.Printf("invalid log level %s\n, change to INFO", logLevel)
 		level = zapcore.InfoLevel
 	}
 	return level
