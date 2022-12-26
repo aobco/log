@@ -2,3 +2,4 @@
 demo
 .idea
 sam*.log
+.DS_Store
