@@ -130,7 +130,7 @@ func Default() {
 		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // color
 
 		logLevel := zap.InfoLevel
-		debugEnabled := os.Getenv("ocpf_log_debug")
+		debugEnabled := os.Getenv("xxx_log_debug")
 		if len(debugEnabled) > 0 {
 			logLevel = zap.DebugLevel
 		}
@@ -211,7 +211,14 @@ func Errorf(template string, args ...interface{}) {
 	if Sugar == nil {
 		Default()
 	}
-	args = append(args, string(debug.Stack()))
+	mesages := string(debug.Stack())
+	split := strings.Split(mesages, "\n")
+	if len(split) > 5 {
+		split = append(split[0:1], split[5:]...)
+
+		mesages = strings.Join(split, "\n")
+	}
+	args = append(args, mesages)
 	Sugar.Errorf(template+"\n%v", args...)
 }
 

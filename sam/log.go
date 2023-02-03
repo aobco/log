@@ -4,7 +4,6 @@ import "github.com/aobco/log"
 
 func main() {
 	size()
-	date()
 }
 
 func size() {
