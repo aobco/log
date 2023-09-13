@@ -22,19 +22,21 @@ const (
 )
 
 var (
-	Logger *zap.Logger
-	Sugar  *zap.SugaredLogger
-	once   sync.Once
+	Logger    *zap.Logger
+	Sugar     *zap.SugaredLogger
+	once      sync.Once
+	opening   = make(map[string]bool, 0)
+	openingMu sync.Mutex
 )
 
 // zapcore.ISO8601TimeEncoder
 func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	//loc, err := time.LoadLocation("Asia/Shanghai")
-	//if err != nil {
+	// loc, err := time.LoadLocation("Asia/Shanghai")
+	// if err != nil {
 	//	Errorf("time load location [Asia/Shanghai] fail %v", err)
 	//	loc = time.FixedZone("CST", 8*3600)
-	//}
-	//enc.AppendString(t.In(loc).Format("2006-01-02 15:04:05.000"))
+	// }
+	// enc.AppendString(t.In(loc).Format("2006-01-02 15:04:05.000"))
 	enc.AppendString(t.Format(time.RFC3339))
 }
 
@@ -114,12 +116,18 @@ func logLv(logLevel string) zapcore.Level {
 }
 
 func Init(filename string, logLevel string, maxSize int, maxBackups int, maxAge int, rollingBy int, stdout ...bool) {
+	openingMu.Lock()
+	defer openingMu.Unlock()
+	if opening[filename] {
+		return
+	}
 	switch rollingBy {
 	case RollingBySize:
 		SizeRolling(filename, logLevel, maxSize, maxBackups, maxAge, stdout...)
 	default:
 		DateRolling(filename, logLevel, maxBackups, maxAge, stdout...)
 	}
+	opening[filename] = true
 }
 
 func Default() {
