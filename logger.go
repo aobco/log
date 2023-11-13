@@ -78,7 +78,7 @@ func devCore(stdout []bool, level zapcore.Level, cores *[]zapcore.Core) {
 	if len(stdout) > 0 && stdout[0] {
 		devEncoderConfig := zap.NewDevelopmentEncoderConfig()
 		devEncoderConfig.EncodeTime = timeEncoder
-		devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		// devEncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		c := zapcore.NewCore(zapcore.NewConsoleEncoder(devEncoderConfig), zapcore.WriteSyncer(os.Stdout), level)
 		*cores = append(*cores, c)
 	}
@@ -87,7 +87,7 @@ func devCore(stdout []bool, level zapcore.Level, cores *[]zapcore.Core) {
 func logCore(fileWriterSyncer zapcore.WriteSyncer, level zapcore.Level, cores *[]zapcore.Core) {
 	fileEncoderConfig := zap.NewProductionEncoderConfig()
 	fileEncoderConfig.EncodeTime = timeEncoder
-	fileEncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	// fileEncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 	c := zapcore.NewCore(zapcore.NewConsoleEncoder(fileEncoderConfig), fileWriterSyncer, level)
 	*cores = append(*cores, c)
 }
