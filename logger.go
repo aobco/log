@@ -2,8 +2,8 @@ package log
 
 import (
 	"fmt"
+	"github.com/aobco/lumberjack/v3"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/natefinch/lumberjack/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
