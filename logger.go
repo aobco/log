@@ -2,10 +2,10 @@ package log
 
 import (
 	"fmt"
-	"github.com/lestrrat-go/file-rotatelogs"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/natefinch/lumberjack/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -29,12 +29,12 @@ var (
 
 // zapcore.ISO8601TimeEncoder
 func timeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	//loc, err := time.LoadLocation("Asia/Shanghai")
-	//if err != nil {
+	// loc, err := time.LoadLocation("Asia/Shanghai")
+	// if err != nil {
 	//	Errorf("time load location [Asia/Shanghai] fail %v", err)
 	//	loc = time.FixedZone("CST", 8*3600)
-	//}
-	//enc.AppendString(t.In(loc).Format("2006-01-02 15:04:05.000"))
+	// }
+	// enc.AppendString(t.In(loc).Format("2006-01-02 15:04:05.000"))
 	enc.AppendString(t.Format(time.RFC3339))
 }
 
@@ -47,7 +47,7 @@ func DateRolling(filename string, logLevel string, maxBackups, maxAge int, stdou
 	cores := make([]zapcore.Core, 0)
 	fileWriterSyncer := zapcore.AddSync(rotate)
 	logCore(fileWriterSyncer, level, &cores)
-	devCore(stdout, level, &cores)
+	// devCore(stdout, level, &cores)
 	core := zapcore.NewTee(cores...)
 	Logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
 	Sugar = Logger.Sugar()
@@ -56,14 +56,17 @@ func DateRolling(filename string, logLevel string, maxBackups, maxAge int, stdou
 func SizeRolling(filename string, logLevel string, maxSize, maxBackups, maxAge int, stdout ...bool) {
 	level := logLv(logLevel)
 	cores := make([]zapcore.Core, 0)
-	fileWriterSyncer := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   filename,
-		MaxSize:    maxSize, // MB
-		LocalTime:  true,
+	opts := &lumberjack.Options{
+		MaxAge:     time.Duration(maxAge*24) * time.Hour,
 		MaxBackups: maxBackups,
-		MaxAge:     maxAge, // Day
+		LocalTime:  true,
 		Compress:   true,
-	})
+	}
+	roller, err := lumberjack.NewRoller(filename, int64(maxSize*1024*1024), opts)
+	if err != nil {
+		panic(err)
+	}
+	fileWriterSyncer := zapcore.AddSync(roller)
 	logCore(fileWriterSyncer, level, &cores)
 	devCore(stdout, level, &cores)
 	core := zapcore.NewTee(cores...)
