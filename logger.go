@@ -117,6 +117,9 @@ func logLv(logLevel string) zapcore.Level {
 }
 
 func Init(filename string, logLevel string, maxSize int, maxBackups int, maxAge int, rollingBy int, stdout ...bool) {
+	if Sugar != nil {
+		return
+	}
 	switch rollingBy {
 	case RollingBySize:
 		SizeRolling(filename, logLevel, maxSize, maxBackups, maxAge, stdout...)
