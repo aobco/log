@@ -22,9 +22,10 @@ const (
 )
 
 var (
-	Logger *zap.Logger
-	Sugar  *zap.SugaredLogger
-	once   sync.Once
+	Logger      *zap.Logger
+	Sugar       *zap.SugaredLogger
+	once        sync.Once
+	oncePersist sync.Once
 )
 
 // zapcore.ISO8601TimeEncoder
@@ -117,15 +118,14 @@ func logLv(logLevel string) zapcore.Level {
 }
 
 func Init(filename string, logLevel string, maxSize int, maxBackups int, maxAge int, rollingBy int, stdout ...bool) {
-	if Sugar != nil {
-		return
-	}
-	switch rollingBy {
-	case RollingBySize:
-		SizeRolling(filename, logLevel, maxSize, maxBackups, maxAge, stdout...)
-	default:
-		DateRolling(filename, logLevel, maxBackups, maxAge, stdout...)
-	}
+	oncePersist.Do(func() {
+		switch rollingBy {
+		case RollingBySize:
+			SizeRolling(filename, logLevel, maxSize, maxBackups, maxAge, stdout...)
+		default:
+			DateRolling(filename, logLevel, maxBackups, maxAge, stdout...)
+		}
+	})
 }
 
 func Default() {
